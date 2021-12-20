@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "st1Type": {
+      "value": "Standard_LRS"
+    },
+    "ubantu linexvmName": {
+      "value": "vm1"
+    },
+    "ubantu linexvmAdminUserName": {
+      "value": "Ajay"
+    },
+    "ubantu linexvmAdminPassword": {
+      "value": "Aj@y9642838661"
+    },
+    "ubantu linexvmUbuntuOSVersion": {
+      "value": "14.04.2-LTS"
+    },
+    "ubantu linexvm2Name": {
+      "value": "vm2"
+    },
+    "ubantu linexvm2AdminUserName": {
+      "value": "ajay2"
+    },
+    "ubantu linexvm2AdminPassword": {
+      "value": "Aj@y9642838661"
+    },
+    "ubantu linexvm2UbuntuOSVersion": {
+      "value": "14.04.2-LTS"
+    },
+    "testName": {
+      "value": "sample"
+    },
+    "testSKU": {
+      "value": "Free"
+    },
+    "testWorkerSize": {
+      "value": "0"
+    }
+  }
+}

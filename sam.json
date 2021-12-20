@@ -1,0 +1,326 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "st1Type": {
+            "type": "string",
+            "defaultValue": "Standard_LRS",
+            "allowedValues": [
+                "Standard_LRS",
+                "Standard_ZRS",
+                "Standard_GRS",
+                "Standard_RAGRS",
+                "Premium_LRS"
+            ]
+        },
+        "ubantu linexvmName": {
+            "type": "string",
+            "minLength": 1
+        },
+        "ubantu linexvmAdminUserName": {
+            "type": "string",
+            "minLength": 1
+        },
+        "ubantu linexvmAdminPassword": {
+            "type": "securestring"
+        },
+        "ubantu linexvmUbuntuOSVersion": {
+            "type": "string",
+            "defaultValue": "14.04.2-LTS",
+            "allowedValues": [
+                "12.04.5-LTS",
+                "14.04.2-LTS",
+                "15.04"
+            ]
+        },
+        "ubantu linexvm2Name": {
+            "type": "string",
+            "minLength": 1
+        },
+        "ubantu linexvm2AdminUserName": {
+            "type": "string",
+            "minLength": 1
+        },
+        "ubantu linexvm2AdminPassword": {
+            "type": "securestring"
+        },
+        "ubantu linexvm2UbuntuOSVersion": {
+            "type": "string",
+            "defaultValue": "14.04.2-LTS",
+            "allowedValues": [
+                "12.04.5-LTS",
+                "14.04.2-LTS",
+                "15.04"
+            ]
+        },
+        "testName": {
+            "type": "string",
+            "minLength": 1
+        },
+        "testSKU": {
+            "type": "string",
+            "allowedValues": [
+                "Free",
+                "Shared",
+                "Basic",
+                "Standard"
+            ],
+            "defaultValue": "Free"
+        },
+        "testWorkerSize": {
+            "type": "string",
+            "allowedValues": [
+                "0",
+                "1",
+                "2"
+            ],
+            "defaultValue": "0"
+        }
+    },
+    "resources": [
+        {
+            "name": "vnet",
+            "type": "Microsoft.Network/virtualNetworks",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [],
+            "tags": {
+                "displayName": "vnet"
+            },
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('vnetPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('vnetSubnet1Name')]",
+                        "properties": {
+                            "addressPrefix": "[variables('vnetSubnet1Prefix')]"
+                        }
+                    },
+                    {
+                        "name": "[variables('vnetSubnet2Name')]",
+                        "properties": {
+                            "addressPrefix": "[variables('vnetSubnet2Prefix')]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[variables('st1Name')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [],
+            "tags": {
+                "displayName": "st1"
+            },
+            "properties": {
+                "accountType": "[parameters('st1Type')]"
+            }
+        },
+        {
+            "name": "[variables('ubantu linexvmNicName')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', 'vnet')]"
+            ],
+            "tags": {
+                "displayName": "ubantu linexvmNic"
+            },
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[variables('ubantu linexvmSubnetRef')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('ubantu linexvmName')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('st1Name'))]",
+                "[concat('Microsoft.Network/networkInterfaces/', variables('ubantu linexvmNicName'))]"
+            ],
+            "tags": {
+                "displayName": "ubantu linexvm"
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('ubantu linexvmVmSize')]"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('ubantu linexvmName')]",
+                    "adminUsername": "[parameters('ubantu linexvmAdminUsername')]",
+                    "adminPassword": "[parameters('ubantu linexvmAdminPassword')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('ubantu linexvmImagePublisher')]",
+                        "offer": "[variables('ubantu linexvmImageOffer')]",
+                        "sku": "[parameters('ubantu linexvmUbuntuOSVersion')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "ubantu linexvmOSDisk",
+                        "vhd": {
+                            "uri": "[concat('http://', variables('st1Name'), '.blob.core.windows.net/', variables('ubantu linexvmStorageAccountContainerName'), '/', variables('ubantu linexvmOSDiskName'), '.vhd')]"
+                        },
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('ubantu linexvmNicName'))]"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "[variables('ubantu linexvm2NicName')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', 'vnet')]"
+            ],
+            "tags": {
+                "displayName": "ubantu linexvm2Nic"
+            },
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[variables('ubantu linexvm2SubnetRef')]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('ubantu linexvm2Name')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('st1Name'))]",
+                "[concat('Microsoft.Network/networkInterfaces/', variables('ubantu linexvm2NicName'))]"
+            ],
+            "tags": {
+                "displayName": "ubantu linexvm2"
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('ubantu linexvm2VmSize')]"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('ubantu linexvm2Name')]",
+                    "adminUsername": "[parameters('ubantu linexvm2AdminUsername')]",
+                    "adminPassword": "[parameters('ubantu linexvm2AdminPassword')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('ubantu linexvm2ImagePublisher')]",
+                        "offer": "[variables('ubantu linexvm2ImageOffer')]",
+                        "sku": "[parameters('ubantu linexvm2UbuntuOSVersion')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "ubantu linexvm2OSDisk",
+                        "vhd": {
+                            "uri": "[concat('http://', variables('st1Name'), '.blob.core.windows.net/', variables('ubantu linexvm2StorageAccountContainerName'), '/', variables('ubantu linexvm2OSDiskName'), '.vhd')]"
+                        },
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('ubantu linexvm2NicName'))]"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "[parameters('testName')]",
+            "type": "Microsoft.Web/serverfarms",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2014-06-01",
+            "dependsOn": [],
+            "tags": {
+                "displayName": "test"
+            },
+            "properties": {
+                "name": "[parameters('testName')]",
+                "sku": "[parameters('testSKU')]",
+                "workerSize": "[parameters('testWorkerSize')]",
+                "numberOfWorkers": 1
+            }
+        },
+        {
+            "name": "[variables('webappName')]",
+            "type": "Microsoft.Web/sites",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-08-01",
+            "dependsOn": [
+                "[concat('Microsoft.Web/serverfarms/', parameters('testName'))]"
+            ],
+            "tags": {
+                "[concat('hidden-related:', resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('testName'))]": "Resource",
+                "displayName": "webapp"
+            },
+            "properties": {
+                "name": "[variables('webappName')]",
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms/', parameters('testName'))]"
+            }
+        }
+    ],
+    "variables": {
+        "vnetPrefix": "10.0.0.0/16",
+        "vnetSubnet1Name": "Subnet-1",
+        "vnetSubnet1Prefix": "10.0.0.0/24",
+        "vnetSubnet2Name": "Subnet-2",
+        "vnetSubnet2Prefix": "10.0.1.0/24",
+        "st1Name": "[concat('st1', uniqueString(resourceGroup().id))]",
+        "ubantu linexvmImagePublisher": "Canonical",
+        "ubantu linexvmImageOffer": "UbuntuServer",
+        "ubantu linexvmOSDiskName": "ubantu linexvmOSDisk",
+        "ubantu linexvmVmSize": "Standard_D1",
+        "ubantu linexvmVnetID": "[resourceId('Microsoft.Network/virtualNetworks', 'vnet')]",
+        "ubantu linexvmSubnetRef": "[concat(variables('ubantu linexvmVnetID'), '/subnets/', variables('vnetSubnet1Name'))]",
+        "ubantu linexvmStorageAccountContainerName": "vhds",
+        "ubantu linexvmNicName": "[concat(parameters('ubantu linexvmName'), 'NetworkInterface')]",
+        "ubantu linexvm2ImagePublisher": "Canonical",
+        "ubantu linexvm2ImageOffer": "UbuntuServer",
+        "ubantu linexvm2OSDiskName": "ubantu linexvm2OSDisk",
+        "ubantu linexvm2VmSize": "Standard_D1",
+        "ubantu linexvm2VnetID": "[resourceId('Microsoft.Network/virtualNetworks', 'vnet')]",
+        "ubantu linexvm2SubnetRef": "[concat(variables('ubantu linexvm2VnetID'), '/subnets/', variables('vnetSubnet1Name'))]",
+        "ubantu linexvm2StorageAccountContainerName": "vhds",
+        "ubantu linexvm2NicName": "[concat(parameters('ubantu linexvm2Name'), 'NetworkInterface')]",
+        "webappName": "[concat('webapp', uniqueString(resourceGroup().id))]"
+    }
+}
